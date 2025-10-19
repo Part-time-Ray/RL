@@ -1,0 +1,8 @@
+gymnasium
+ale-py
+imageio[ffmpeg]
+tensorboard
+opencv-python
+ 
+# python -m venv env && source env/bin/activate && python -m pip install --upgrade pip && pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu118 && pip install -r requirements.txt
+# cuda 11.8 needs compatible with GPU

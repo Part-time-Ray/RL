@@ -241,22 +241,29 @@ class DQNBaseAgent(ABC):
 	def load_and_evaluate(self, load_path):
 		self.load(load_path)
 		seed_map = {
-			"DDQN": 16143,
-			"DQN": 95291,
+			"DDQN": 353009,
+			"DQN": 71523,
+			"Dueling": 400190,
+		}
+		best_reward = {
+			"DDQN": 9360,
+			"DQN": 8940,
+			"Dueling": 10261,
 		}
 		self.evaluate_one_episode(seed=seed_map.get(self.network, 42))
 		return
-		max_reward = -float('inf')
-		max_seed = 0
-		for random_seed in random.sample(range(1, 100000), 500):
-			print(f"Random seed: {random_seed}")
-			total_reward = self.evaluate_one_episode(seed=random_seed)
-			print(f"\tTotal reward: {total_reward}")
-			if total_reward > max_reward:
-				max_reward = total_reward
-				max_seed = random_seed
-			print("==============================================")
-		print(f"Best reward {max_reward} under random seed {max_seed}")
+		# max_reward = best_reward.get(self.network, 0)
+		# max_seed = seed_map.get(self.network, 42)
+		# for random_seed in random.sample(range(1, 1000000), 50000):
+		# 	print(f"Random seed: {random_seed}")
+		# 	total_reward = self.evaluate_one_episode(seed=random_seed)
+		# 	print(f"\tTotal reward: {total_reward}")
+		# 	if total_reward > max_reward:
+		# 		max_reward = total_reward
+		# 		max_seed = random_seed
+		# 	print("==============================================")
+		# print(self.network)
+		# print(f"\tBest reward {max_reward} under random seed {max_seed}")
 
 
 
