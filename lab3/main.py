@@ -34,12 +34,12 @@ if __name__ == '__main__':
 	config = {
 		"gpu": True,
 		"training_steps": 1e8,
-		"update_sample_count": 30000,
+		"update_sample_count": 100000,
 		"discount_factor_gamma": 0.99,
 		"discount_factor_lambda": 0.95,
 		"clip_epsilon": 0.1,
 		"max_gradient_norm": 0.5,
-		"batch_size": 256,
+		"batch_size": 512,
 		"logdir": 'log/Enduro_release/',
 		"update_ppo_epoch": 3,
 		"learning_rate": 1e-5,
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 	elif args.demo:
 		mx_reward = 0
 		mx_seed = 0
-		tq = tqdm.tqdm(range(1000))
+		tq = tqdm.tqdm(range(3000))
 		for _ in tq:
 			seed = random.randint(0, 10000)
 			reward = agent.demo(seed=seed)

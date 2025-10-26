@@ -228,8 +228,9 @@ class PPOBaseAgent(ABC):
 		state = self.preprocessor.reset(observation)
 		total_reward = 0
 		while True:
-			render = self.test_env.render()
-			frames.append(render)
+			if self.video:
+				render = self.test_env.render()
+				frames.append(render)
 			action, _, _ = self.decide_agent_actions(state, eval=True)
 			next_observation, reward, terminate, truncate, info = self.test_env.step(action)
 			next_state = self.preprocessor.step(next_observation)
