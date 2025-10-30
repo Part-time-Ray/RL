@@ -1,0 +1,19 @@
+gym==0.26.2
+numpy==1.25.2
+torch==2.0.1
+tensorboard==2.14.0
+opencv-python==4.8.0.76
+moviepy==1.0.3
+box2d==2.3.10
+pygame==2.5.0  # 或最新穩定版本
+imageio
+
+# conda create -n env python=3.10 && conda activate env && pip install -r requirements.txt
+# python --version
+# 會顯示 Python 3.10.x
+# pip list
+# 會列出所有安裝好的套件版本
+# conda env export > environment.yml
+# 可選：匯出環境檔（方便別人重建）
+# 別人就可以用這個 .yml 直接重建整個環境：
+# conda env create -f environment.yml

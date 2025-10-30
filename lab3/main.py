@@ -57,18 +57,20 @@ if __name__ == '__main__':
 	if args.inference:
 		agent.inference(args.load_model)
 	elif args.demo:
-		mx_reward = 0
-		mx_seed = 0
-		tq = tqdm.tqdm(range(3000))
-		for _ in tq:
-			seed = random.randint(0, 10000)
-			reward = agent.demo(seed=seed)
-			if reward > mx_reward:
-				mx_reward = reward
-				mx_seed = seed
-			tq.set_description(f"Max Reward: {mx_reward} (Seed: {mx_seed})")		
-		print(f"Max Reward: {mx_reward} with seed {mx_seed}")
-		agent.demo()
+		agent.demo(seed=3267)
+		
+		# mx_reward = 0
+		# mx_seed = 0
+		# tq = tqdm.tqdm(range(3000))
+		# for _ in tq:
+		# 	seed = random.randint(0, 10000)
+		# 	reward = agent.demo(seed=seed)
+		# 	if reward > mx_reward:
+		# 		mx_reward = reward
+		# 		mx_seed = seed
+		# 	tq.set_description(f"Max Reward: {mx_reward} (Seed: {mx_seed})")		
+		# print(f"Max Reward: {mx_reward} with seed {mx_seed}")
+		# agent.demo()
 	else:
 		agent.train()
 
