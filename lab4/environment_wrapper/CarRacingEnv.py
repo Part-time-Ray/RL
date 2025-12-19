@@ -46,7 +46,7 @@ class CarRacingEnvironment:
 
 		return road_pixel_count, grass_pixel_count
 	def check_front_road_grass(self, obs):
-		part_image = obs[30:60, 40:60, :]
+		part_image = obs[20:60, 30:70, :]
 		road_color_lower = np.array([90, 90, 90], dtype=np.uint8)
 		road_color_upper = np.array([120, 120, 120], dtype=np.uint8)
 		grass_color_lower = np.array([90, 180, 90], dtype=np.uint8)
@@ -69,36 +69,54 @@ class CarRacingEnvironment:
 
 		# my reward shaping strategy, you can try your own
 		if self.self_reward_function2:
-			add_reward = 0
-			if self.ep_len < 10:
-				steering, gas, brake = action
-				# add_reward += (1 - abs(steering)) * 15
-				# add_reward += gas * 3
-				add_reward -= brake * 15
+			steering, gas, brake = action
+			if gas > 0.7:
+				reward -= gas * 5 * 0.05
+			if self.ep_len < 30:
+				reward -= brake * 10 * 0.05
 			else:
 				front_road_ratio = self.check_front_road_grass(obs)
-				add_reward += front_road_ratio * 10
-				if front_road_ratio < 0.7:
-					steering, gas, brake = action
-					add_reward -= gas * 3
-					brake_distance = abs(brake - (1-front_road_ratio))
-					add_reward += np.exp(-brake_distance) * 5
-					# add_reward += steering * steering * 0.005
-				elif front_road_ratio >= 0.95:
-					steering, gas, brake = action
-					add_reward += gas * 5
-					add_reward -= abs(steering) * 3
-			
-			now_road_ratio = road_pixel_count / (road_pixel_count + grass_pixel_count + 1e-5)
-			add_reward += now_road_ratio * 5
-			add_reward -= (1 - now_road_ratio) * 3
+				reward += front_road_ratio * 10 * 0.05
+				reward -= (1 - front_road_ratio) * 5 * 0.05
 
-			add_reward = add_reward * 0.05 + np.log(self.ep_len) * 0.001
-					
-			reward += add_reward
-			if 1-now_road_ratio >= 0.99:
-				reward = -100
+				if 0.05 < front_road_ratio < 0.5:
+					reward -= gas * 5 * 0.05
+					reward += brake * 5 * 0.05
+
+			if road_pixel_count < 10:
 				terminates = True
+				reward = -100
+
+			# add_reward = 0
+			# if self.ep_len < 30:
+			# 	steering, gas, brake = action
+			# 	add_reward += (1 - abs(steering)) * 15
+			# 	# add_reward += gas * 3
+			# 	add_reward -= brake * 15
+			# else:
+			# 	front_road_ratio = self.check_front_road_grass(obs)
+			# 	add_reward += front_road_ratio * 20
+			# 	if front_road_ratio < 0.7:
+			# 		steering, gas, brake = action
+			# 		add_reward -= gas * 3
+			# 		brake_distance = abs(brake - (1-front_road_ratio))
+			# 		add_reward += np.exp(-brake_distance) * 5
+			# 		# add_reward += steering * steering * 0.005
+			# 	elif front_road_ratio >= 0.95:
+			# 		steering, gas, brake = action
+			# 		add_reward += gas * 5
+			# 		add_reward -= abs(steering) * 3
+			
+			# now_road_ratio = road_pixel_count / (road_pixel_count + grass_pixel_count + 1e-5)
+			# add_reward += now_road_ratio * 15
+			# add_reward -= (1 - now_road_ratio) * 10
+
+			# add_reward = add_reward * 0.05 + np.log(self.ep_len) * 0.001
+					
+			# reward += add_reward
+			# if 1-now_road_ratio >= 0.99:
+			# 	reward = -100
+			# 	terminates = True
 			
 		elif self.self_reward_function:
 			ratio = (grass_pixel_count / (road_pixel_count + grass_pixel_count + 1e-5))

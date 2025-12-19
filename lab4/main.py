@@ -13,6 +13,7 @@ if __name__ == '__main__':
 	parser.add_argument('--self_reward_function2', action='store_true', help='enable self reward function 2')
 	parser.add_argument('--ns', '-ns', type=str, default='', help='name suffix for logdir')
 	parser.add_argument('--load_model', '-l', type=str, default='', help='path to load model')
+	parser.add_argument('--demo_train', action='store_true', help='whether to run demo mode')
 	args = parser.parse_args()
 	# my hyperparameters, you can change it as you like
 	config = {
@@ -41,6 +42,7 @@ if __name__ == '__main__':
 		"self_reward_function2": args.self_reward_function2,
 		"ns": args.ns,
 		"load_model": args.load_model,
+		"demo_train": args.demo_train,
 	}
 	agent = CarRacingTD3Agent(config)
 	agent.train()

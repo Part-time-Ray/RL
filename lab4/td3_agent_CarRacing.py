@@ -51,10 +51,16 @@ class CarRacingTD3Agent(TD3BaseAgent):
 		if not self.single_critic:
 			self.critic_opt2 = torch.optim.Adam(self.critic_net2.parameters(), lr=self.lrc)
 
+		self.actor_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.actor_opt,mode='max', factor=0.5, patience=30, min_lr=1e-6)
+		self.critic_scheduler1 = torch.optim.lr_scheduler.ReduceLROnPlateau(self.critic_opt1,mode='max', factor=0.5, patience=30, min_lr=1e-6)
+		if not self.single_critic:
+			self.critic_scheduler2 = torch.optim.lr_scheduler.ReduceLROnPlateau(self.critic_opt2,mode='max', factor=0.5, patience=30, min_lr=1e-6)
+
 		# choose Gaussian noise or OU noise
 
 		noise_mean = np.full(self.env.action_space.shape[0], 0.0, np.float32)
-		noise_std = np.full(self.env.action_space.shape[0], 1.0, np.float32)
+		# noise_std = np.full(self.env.action_space.shape[0], 1.0, np.float32)
+		noise_std = np.full(self.env.action_space.shape[0], 0.5, np.float32)
 		self.noise = OUNoiseGenerator(noise_mean, noise_std)
 
 		# self.noise = GaussianNoise(self.env.action_space.shape[0], 0.0, 1.0)

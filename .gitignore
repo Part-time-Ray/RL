@@ -1,3 +1,4 @@
+
 *.png
 *.jpg
 *.gif
@@ -12,3 +13,16 @@ log/
 *.ckpt
 *.csv
 temp.py
+*.zip
+*.npz
+*.yml
+*.sdf
+*/examples
+*.obj
+*/racecar_gym
+*/models
+tensorboard_logs/
+store/
+racecar*
+tests/
+docs/

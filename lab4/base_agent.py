@@ -66,11 +66,22 @@ class TD3BaseAgent(ABC):
 		self.self_reward_function2 = config["self_reward_function2"]
 		self.ns = config["ns"] if len(config["ns"]) > 0 else time.strftime("%Y%m%d-%H%M%S")
 		self.load_model = config["load_model"]
+		self.demo_train = config["demo_train"]
 
 		self.replay_buffer = ReplayMemory(int(config["replay_buffer_capacity"]))
+		if self.demo_train:
+			self.ns = "demo_train"
+			self.video = True
+			assert self.load_model != ''
+			assert self.seed != []
+			self.eval_interval = 5
+			self.update_freq = 50
+		
+
 		self.dir = os.path.join("store", self.ns)
-		os.makedirs(os.path.join(self.dir, "log"), exist_ok=True)
-		self.writer = SummaryWriter(os.path.join(self.dir, "log"))
+		if not self.demo_train:
+			os.makedirs(os.path.join(self.dir, "log"), exist_ok=True)
+			self.writer = SummaryWriter(os.path.join(self.dir, "log"))
 
 		self.best_score = -float('inf')
 
@@ -113,6 +124,7 @@ class TD3BaseAgent(ABC):
 		for episode in range(self.total_episode):
 			total_reward = 0
 			state, infos = self.env.reset() if len(self.seed) == 0 else self.env.reset(seed=self.seed[episode % len(self.seed)])
+			# state, infos = self.env.reset()
 			self.noise.reset()
 			for t in range(10000):
 				if self.total_time_step < self.warmup_steps:
@@ -135,24 +147,26 @@ class TD3BaseAgent(ABC):
 				total_reward += reward
 				state = next_state
 				if terminates or truncates:
-					self.writer.add_scalar('Train/Episode Reward', total_reward, self.total_time_step)
+					if not self.demo_train:
+						self.writer.add_scalar('Train/Episode Reward', total_reward, self.total_time_step)
 					print(
 						'Step: {}\tEpisode: {}\tLength: {:3d}\tTotal reward: {:.2f}'
 						.format(self.total_time_step, episode+1, t, total_reward))
 				
 					break
-			
+
 			if (episode+1) % self.eval_interval == 0:
 				# save model checkpoint
 				avg_score = self.evaluate()
-				self.save(os.path.join(self.writer.log_dir, f"model_{self.total_time_step}_{int(avg_score)}.pth"))
-				self.writer.add_scalar('Evaluate/Episode Reward', avg_score, self.total_time_step)
+				if not self.demo_train:
+					self.save(os.path.join(self.writer.log_dir, f"model_{self.total_time_step}_{int(avg_score)}.pth"))
+					self.writer.add_scalar('Evaluate/Episode Reward', avg_score, self.total_time_step)
 
 	def evaluate(self):
 		print("==============================================")
 		print("Evaluating...")
 		all_rewards = []
-		for episode in range(self.eval_episode):
+		for episode in range(self.eval_episode if len(self.seed) == 0 else len(self.seed)):
 			frames = []
 			total_reward = 0
 			state, infos = self.test_env.reset() if len(self.seed) == 0 else self.test_env.reset(seed=self.seed[episode % len(self.seed)])
@@ -169,22 +183,48 @@ class TD3BaseAgent(ABC):
 					all_rewards.append(total_reward)
 					break
 			if self.video:
-				video_path = os.path.join(self.dir, "video")
-				os.makedirs(video_path, exist_ok=True)
-				with imageio.get_writer(os.path.join(video_path, f"eval_{episode+1}.mp4"), fps=30, macro_block_size=1) as video:
-					for f in frames:
-						video.append_data(f)
+				if self.demo_train:
+					id = episode % len(self.seed)
+					path = os.path.join(self.dir, f"seed_{self.seed[id]}")
+					os.makedirs(path, exist_ok=True)
+					last_best = self.get_best_score(path)
+					if total_reward > int(last_best):
+						if os.path.exists(os.path.join(path, f"{last_best}.txt")): os.remove(os.path.join(path, f"{last_best}.txt"))
+						open(os.path.join(path, f"{int(total_reward)}.txt"), "w").close()
+						print(f"\tNew best score for seed {self.seed[id]}: {total_reward}, saving model...")
+						self.save(os.path.join(path, "best_model.pth"))
+						with imageio.get_writer(os.path.join(path, f"video.mp4"), fps=30, macro_block_size=1) as video:
+							for f in frames:
+								video.append_data(f)
+				else:
+					video_path = os.path.join(self.dir, "video")
+					os.makedirs(video_path, exist_ok=True)
+					with imageio.get_writer(os.path.join(video_path, f"eval_{episode+1}.mp4"), fps=30, macro_block_size=1) as video:
+						for f in frames:
+							video.append_data(f)
 
-		avg = sum(all_rewards) / self.eval_episode
+		avg = sum(all_rewards) / (self.eval_episode if len(self.seed) == 0 else len(self.seed))
 		print(f"average score: {avg}")
-		print("==============================================")
+		print("==============================")
 
-		if avg > self.best_score:
-			self.best_score = avg
-			print(f"New best score: {self.best_score}, saving model...")
-			self.save(os.path.join(self.dir, "best_model.pth"))
+		self.actor_scheduler.step(avg)
+		self.critic_scheduler1.step(avg)
+		if not self.single_critic:
+			self.critic_scheduler2.step(avg)
+
+		if not self.demo_train:
+			if avg > self.best_score:
+				self.best_score = avg
+				print(f"New best score: {self.best_score}, saving model...")
+				self.save(os.path.join(self.dir, "best_model.pth"))
 		return avg
-	
+	def get_best_score(self, folder):
+		with os.scandir(folder) as entries:
+			for entry in entries:
+				if entry.is_file() and entry.name.endswith(".txt"):
+					txt_file = entry.name[:-4]
+					return txt_file
+		return "-10000"
 	# save model
 	def save(self, save_path):
 		if self.single_critic:
@@ -208,6 +248,10 @@ class TD3BaseAgent(ABC):
 		self.critic_net1.load_state_dict(checkpoint['critic1'])
 		if not self.single_critic:
 			self.critic_net2.load_state_dict(checkpoint['critic2'])
+		self.target_actor_net.load_state_dict(self.actor_net.state_dict())
+		self.target_critic_net1.load_state_dict(self.critic_net1.state_dict())
+		if not self.single_critic:
+			self.target_critic_net2.load_state_dict(self.critic_net2.state_dict())
 
 	# load model weights and evaluate
 	def load_and_evaluate(self, load_path):
